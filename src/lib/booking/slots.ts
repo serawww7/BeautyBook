@@ -17,6 +17,12 @@ export type WorkingHourRow = {
   end_time: string;
 };
 
+export type DayExceptionRow = {
+  date: string; // YYYY-MM-DD
+  is_day_off: boolean;
+  time_ranges: { start_time: string; end_time: string }[];
+};
+
 export type BookingInterval = {
   starts_at: string;
   ends_at: string;
@@ -44,11 +50,32 @@ function rangesOverlap(
   return startA < endB && endA > startB;
 }
 
+function resolveIntervalsForDay(params: {
+  dateKey: string;
+  weekday: number;
+  workingHours: WorkingHourRow[];
+  exceptionsByDate: Map<string, DayExceptionRow>;
+}): WorkingHourRow[] | null {
+  const exception = params.exceptionsByDate.get(params.dateKey);
+
+  if (exception) {
+    if (exception.is_day_off) return null;
+    return exception.time_ranges.map((range) => ({
+      weekday: params.weekday,
+      start_time: range.start_time,
+      end_time: range.end_time,
+    }));
+  }
+
+  return params.workingHours.filter((row) => row.weekday === params.weekday);
+}
+
 export function buildAvailableDays(params: {
   timeZone: string;
   durationMinutes: number;
   workingHours: WorkingHourRow[];
   bookings: BookingInterval[];
+  exceptions?: DayExceptionRow[];
   dayCount?: number;
   now?: Date;
 }): DaySlots[] {
@@ -57,6 +84,7 @@ export function buildAvailableDays(params: {
     durationMinutes,
     workingHours,
     bookings,
+    exceptions = [],
     dayCount = 7,
     now = new Date(),
   } = params;
@@ -67,14 +95,25 @@ export function buildAvailableDays(params: {
     end: new Date(booking.ends_at).getTime(),
   }));
 
+  const exceptionsByDate = new Map(
+    exceptions.map((item) => [item.date, item]),
+  );
+
   const days: DaySlots[] = [];
 
   for (let offset = 0; offset < dayCount; offset += 1) {
     const parts: DateParts = addCalendarDays(today, offset);
     const weekday = getWeekdayInTimeZone(parts, timeZone);
-    const intervals = workingHours.filter((row) => row.weekday === weekday);
+    const dateKey = formatDateKey(parts);
 
-    if (intervals.length === 0) continue;
+    const intervals = resolveIntervalsForDay({
+      dateKey,
+      weekday,
+      workingHours,
+      exceptionsByDate,
+    });
+
+    if (!intervals || intervals.length === 0) continue;
 
     const slots: TimeSlot[] = [];
 
@@ -123,7 +162,7 @@ export function buildAvailableDays(params: {
     if (slots.length === 0) continue;
 
     days.push({
-      dateKey: formatDateKey(parts),
+      dateKey,
       title: formatDayTitle(offset, parts, timeZone),
       dateLabel: formatDateLabel(parts, timeZone),
       slots,

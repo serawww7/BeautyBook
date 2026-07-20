@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 
+import {
+  addCalendarDays,
+  formatDateKey,
+  getZonedParts,
+} from "./datetime";
 import { buildAvailableDays } from "./slots";
 
 export type BookingPageData = {
@@ -59,26 +64,43 @@ export async function getBookingPageData(
 
   const rangeStart = new Date();
   const rangeEnd = new Date(rangeStart.getTime() + 8 * 24 * 60 * 60 * 1000);
+  const todayParts = getZonedParts(rangeStart, salon.timezone);
+  const rangeStartDate = formatDateKey(todayParts);
+  const rangeEndDate = formatDateKey(addCalendarDays(todayParts, 8));
 
-  const [{ data: workingHours }, { data: bookings }] = await Promise.all([
-    supabase
-      .from("working_hours")
-      .select("weekday, start_time, end_time")
-      .eq("master_id", master.id),
-    supabase
-      .from("bookings")
-      .select("starts_at, ends_at")
-      .eq("master_id", master.id)
-      .in("status", ["pending", "confirmed"])
-      .lt("starts_at", rangeEnd.toISOString())
-      .gt("ends_at", rangeStart.toISOString()),
-  ]);
+  const [{ data: workingHours }, { data: bookings }, { data: exceptions }] =
+    await Promise.all([
+      supabase
+        .from("working_hours")
+        .select("weekday, start_time, end_time")
+        .eq("master_id", master.id),
+      supabase
+        .from("bookings")
+        .select("starts_at, ends_at")
+        .eq("master_id", master.id)
+        .in("status", ["pending", "confirmed"])
+        .lt("starts_at", rangeEnd.toISOString())
+        .gt("ends_at", rangeStart.toISOString()),
+      supabase
+        .from("working_day_exceptions")
+        .select("date, is_day_off, time_ranges")
+        .eq("master_id", master.id)
+        .gte("date", rangeStartDate)
+        .lte("date", rangeEndDate),
+    ]);
 
   const days = buildAvailableDays({
     timeZone: salon.timezone,
     durationMinutes: service.duration_minutes,
     workingHours: workingHours ?? [],
     bookings: bookings ?? [],
+    exceptions: (exceptions ?? []).map((row) => ({
+      date: row.date as string,
+      is_day_off: Boolean(row.is_day_off),
+      time_ranges: Array.isArray(row.time_ranges)
+        ? (row.time_ranges as { start_time: string; end_time: string }[])
+        : [],
+    })),
   });
 
   return {

@@ -141,3 +141,24 @@ export async function getWorkingHours(masterId: string) {
     end_time: row.end_time as string,
   }));
 }
+
+export async function getWorkingDayExceptions(masterId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("working_day_exceptions")
+    .select("id, date, is_day_off, time_ranges")
+    .eq("master_id", masterId)
+    .order("date", { ascending: true });
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    id: row.id as string,
+    date: row.date as string,
+    isDayOff: Boolean(row.is_day_off),
+    timeRanges: Array.isArray(row.time_ranges)
+      ? (row.time_ranges as { start_time: string; end_time: string }[])
+      : [],
+  }));
+}

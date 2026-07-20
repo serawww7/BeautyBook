@@ -21,7 +21,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Новий запис
           </Link>
         </div>
-        <nav className="flex gap-2 text-sm">
+        <nav className="flex flex-wrap gap-2 text-sm">
           <Link
             href="/admin"
             className="rounded-lg border border-border px-3 py-2 text-foreground"
@@ -33,6 +33,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             className="rounded-lg border border-border px-3 py-2 text-foreground"
           >
             Графік
+          </Link>
+          <Link
+            href="/admin/exceptions"
+            className="rounded-lg border border-border px-3 py-2 text-foreground"
+          >
+            Винятки
           </Link>
         </nav>
       </header>

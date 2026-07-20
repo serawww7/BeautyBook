@@ -52,6 +52,17 @@ export type Database = {
           end_time: string;
         };
       };
+      working_day_exceptions: {
+        Row: {
+          id: string;
+          master_id: string;
+          date: string;
+          is_day_off: boolean;
+          time_ranges: { start_time: string; end_time: string }[];
+          created_at: string;
+          updated_at: string;
+        };
+      };
       bookings: {
         Row: {
           id: string;
@@ -130,6 +141,20 @@ export type Database = {
             end_time: string;
           }[];
         };
+        Returns: null;
+      };
+      admin_upsert_working_day_exception: {
+        Args: {
+          p_master_id: string;
+          p_date: string;
+          p_is_day_off: boolean;
+          p_time_ranges: { start_time: string; end_time: string }[];
+          p_id?: string | null;
+        };
+        Returns: string;
+      };
+      admin_delete_working_day_exception: {
+        Args: { p_id: string; p_master_id: string };
         Returns: null;
       };
     };
