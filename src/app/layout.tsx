@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BeautyBook",
-  description: "Онлайн-запис для салонів краси",
+  title: "Салон Марини | BeautyBook",
+  description: "Онлайн-запис до майстра",
 };
 
 export const viewport: Viewport = {
