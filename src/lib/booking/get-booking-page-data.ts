@@ -1,11 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
-import {
-  addCalendarDays,
-  formatDateKey,
-  getZonedParts,
-} from "./datetime";
-import { buildAvailableDays, type DaySlots } from "./slots";
+import { getMasterAvailableDays } from "./get-master-available-days";
+import type { DaySlots } from "./slots";
 
 export type PublicService = {
   id: string;
@@ -69,52 +65,11 @@ export async function getBookingPageData(
     price: Number(service.price),
   }));
 
-  const rangeStart = new Date();
-  const rangeEnd = new Date(rangeStart.getTime() + 8 * 24 * 60 * 60 * 1000);
-  const todayParts = getZonedParts(rangeStart, salon.timezone);
-  const rangeStartDate = formatDateKey(todayParts);
-  const rangeEndDate = formatDateKey(addCalendarDays(todayParts, 8));
-
-  const [{ data: workingHours }, { data: bookings }, { data: exceptions }] =
-    await Promise.all([
-      supabase
-        .from("working_hours")
-        .select("weekday, start_time, end_time")
-        .eq("master_id", master.id),
-      supabase
-        .from("bookings")
-        .select("starts_at, ends_at")
-        .eq("master_id", master.id)
-        .in("status", ["pending", "confirmed"])
-        .lt("starts_at", rangeEnd.toISOString())
-        .gt("ends_at", rangeStart.toISOString()),
-      supabase
-        .from("working_day_exceptions")
-        .select("date, is_day_off, time_ranges")
-        .eq("master_id", master.id)
-        .gte("date", rangeStartDate)
-        .lte("date", rangeEndDate),
-    ]);
-
-  const exceptionRows = (exceptions ?? []).map((row) => ({
-    date: row.date as string,
-    is_day_off: Boolean(row.is_day_off),
-    time_ranges: Array.isArray(row.time_ranges)
-      ? (row.time_ranges as { start_time: string; end_time: string }[])
-      : [],
-  }));
-
-  const daysByServiceId: Record<string, DaySlots[]> = {};
-
-  for (const service of services) {
-    daysByServiceId[service.id] = buildAvailableDays({
-      timeZone: salon.timezone,
-      durationMinutes: service.durationMinutes,
-      workingHours: workingHours ?? [],
-      bookings: bookings ?? [],
-      exceptions: exceptionRows,
-    });
-  }
+  const daysByServiceId = await getMasterAvailableDays({
+    timeZone: salon.timezone,
+    masterId: master.id,
+    services,
+  });
 
   return {
     salon: {

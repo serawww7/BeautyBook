@@ -17,6 +17,10 @@ type TodayBookingRow = {
 
 type BookingDetailRow = TodayBookingRow & {
   salon_timezone: string;
+  salon_id: string;
+  master_id: string;
+  service_id: string;
+  service_duration_minutes: number;
 };
 
 export async function getAdminContext(slug = "marina") {
@@ -120,6 +124,10 @@ export async function getBookingDetail(
     serviceName: row.service_name,
     servicePrice: Number(row.service_price),
     salonTimezone: row.salon_timezone,
+    salonId: row.salon_id,
+    masterId: row.master_id,
+    serviceId: row.service_id,
+    serviceDurationMinutes: row.service_duration_minutes,
   };
 }
 

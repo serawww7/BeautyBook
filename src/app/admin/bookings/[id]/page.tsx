@@ -75,6 +75,15 @@ export default async function BookingDetailPage({
         </dl>
       </div>
 
+      {(booking.status === "pending" || booking.status === "confirmed") ? (
+        <Link
+          href={`/admin/bookings/${booking.id}/reschedule`}
+          className="block w-full rounded-lg border border-border px-4 py-3.5 text-center text-base font-medium"
+        >
+          Перенести запис
+        </Link>
+      ) : null}
+
       <BookingStatusActions bookingId={booking.id} status={booking.status} />
     </div>
   );

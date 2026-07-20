@@ -14,4 +14,8 @@ export type AdminBookingListItem = {
 
 export type AdminBookingDetail = AdminBookingListItem & {
   salonTimezone: string;
+  salonId: string;
+  masterId: string;
+  serviceId: string;
+  serviceDurationMinutes: number;
 };

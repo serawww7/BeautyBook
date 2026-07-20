@@ -118,7 +118,19 @@ export type Database = {
           service_name: string;
           service_price: number;
           salon_timezone: string;
+          salon_id: string;
+          master_id: string;
+          service_id: string;
+          service_duration_minutes: number;
         }[];
+      };
+      admin_reschedule_booking: {
+        Args: {
+          p_booking_id: string;
+          p_starts_at: string;
+          p_ends_at: string;
+        };
+        Returns: string;
       };
       admin_update_booking_status: {
         Args: { p_booking_id: string; p_status: BookingStatus };

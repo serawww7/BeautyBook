@@ -39,6 +39,50 @@ export async function updateBookingStatus(
   return { ok: true };
 }
 
+export type RescheduleBookingResult =
+  | { ok: true }
+  | { ok: false; message: string; code?: "SLOT_TAKEN" };
+
+export async function rescheduleBooking(input: {
+  bookingId: string;
+  startsAt: string;
+  endsAt: string;
+}): Promise<RescheduleBookingResult> {
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("admin_reschedule_booking", {
+    p_booking_id: input.bookingId,
+    p_starts_at: input.startsAt,
+    p_ends_at: input.endsAt,
+  });
+
+  if (error) {
+    const message = error.message ?? "";
+    if (message.includes("SLOT_TAKEN")) {
+      return {
+        ok: false,
+        code: "SLOT_TAKEN",
+        message: "Цей час уже зайнятий. Оберіть інший слот.",
+      };
+    }
+    if (message.includes("SLOT_IN_PAST")) {
+      return { ok: false, message: "Не можна перенести в минуле." };
+    }
+    if (message.includes("BOOKING_NOT_RESCHEDULABLE")) {
+      return {
+        ok: false,
+        message: "Цей запис не можна перенести.",
+      };
+    }
+    if (message.includes("BOOKING_NOT_FOUND")) {
+      return { ok: false, message: "Запис не знайдено." };
+    }
+    return { ok: false, message: "Не вдалося перенести запис." };
+  }
+
+  return { ok: true };
+}
+
 export async function findClientByPhone(
   phone: string,
 ): Promise<FindClientResult> {
