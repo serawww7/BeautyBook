@@ -117,16 +117,37 @@ export function formatTimeLabel(date: Date, timeZone: string): string {
   }).format(date);
 }
 
-export function formatDayHeading(offset: number, parts: DateParts): string {
+function capitalizeUk(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toLocaleUpperCase("uk-UA") + value.slice(1);
+}
+
+/** Сьогодні / Завтра / назва дня тижня (у TZ салону) */
+export function formatDayTitle(
+  offset: number,
+  parts: DateParts,
+  timeZone: string,
+): string {
   if (offset === 0) return "Сьогодні";
   if (offset === 1) return "Завтра";
-  if (offset === 2) return "Післязавтра";
 
-  return new Intl.DateTimeFormat("uk-UA", {
+  const noon = zonedLocalToUtc(parts.year, parts.month, parts.day, 12, 0, timeZone);
+  const weekday = new Intl.DateTimeFormat("uk-UA", {
+    timeZone,
     weekday: "long",
+  }).format(noon);
+
+  return capitalizeUk(weekday);
+}
+
+/** Напр. «21 липня» у TZ салону */
+export function formatDateLabel(parts: DateParts, timeZone: string): string {
+  const noon = zonedLocalToUtc(parts.year, parts.month, parts.day, 12, 0, timeZone);
+  return new Intl.DateTimeFormat("uk-UA", {
+    timeZone,
     day: "numeric",
     month: "long",
-  }).format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)));
+  }).format(noon);
 }
 
 export function parseTimeToMinutes(time: string): number {

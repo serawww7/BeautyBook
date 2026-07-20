@@ -15,8 +15,13 @@ type BookingFlowProps = {
 };
 
 type SelectedSlot = TimeSlot & {
-  dayHeading: string;
+  dayTitle: string;
+  dateLabel: string;
 };
+
+function formatSlotSummary(slot: Pick<SelectedSlot, "dayTitle" | "dateLabel" | "label">) {
+  return `${slot.dayTitle}, ${slot.dateLabel}, ${slot.label}`;
+}
 
 export function BookingFlow({ data }: BookingFlowProps) {
   const router = useRouter();
@@ -41,8 +46,12 @@ export function BookingFlow({ data }: BookingFlowProps) {
     [data.service.price],
   );
 
-  function handleSelectSlot(dayHeading: string, slot: TimeSlot) {
-    setSelectedSlot({ ...slot, dayHeading });
+  function handleSelectSlot(
+    dayTitle: string,
+    dateLabel: string,
+    slot: TimeSlot,
+  ) {
+    setSelectedSlot({ ...slot, dayTitle, dateLabel });
     setError(null);
   }
 
@@ -93,9 +102,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
           </p>
           <div className="mt-6 space-y-1 text-sm text-muted-foreground">
             <p>{data.service.name}</p>
-            <p>
-              {confirmed.slot.dayHeading}, {confirmed.slot.label}
-            </p>
+            <p>{formatSlotSummary(confirmed.slot)}</p>
             <p>{data.master.displayName}</p>
           </div>
         </div>
@@ -104,7 +111,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-10 pt-6">
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-10 pt-2">
       <header className="flex flex-col items-center text-center">
         <p className="text-sm text-muted-foreground">{data.salon.name}</p>
         <div
@@ -142,9 +149,12 @@ export function BookingFlow({ data }: BookingFlowProps) {
           <div className="mt-3 space-y-6">
             {data.days.map((day) => (
               <div key={day.dateKey}>
-                <h3 className="text-base font-semibold capitalize">
-                  {day.heading}
-                </h3>
+                <div>
+                  <h3 className="text-base font-semibold capitalize">
+                    {day.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">{day.dateLabel}</p>
+                </div>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {day.slots.map((slot) => {
                     const isSelected = selectedSlot?.startsAt === slot.startsAt;
@@ -153,7 +163,9 @@ export function BookingFlow({ data }: BookingFlowProps) {
                       <button
                         key={slot.startsAt}
                         type="button"
-                        onClick={() => handleSelectSlot(day.heading, slot)}
+                        onClick={() =>
+                          handleSelectSlot(day.title, day.dateLabel, slot)
+                        }
                         className={
                           isSelected
                             ? "rounded-lg bg-primary px-2 py-3 text-sm font-medium text-primary-foreground"
@@ -177,8 +189,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
             Ваші дані
           </h2>
           <p className="mt-2 text-sm text-foreground">
-            {selectedSlot.dayHeading}, {selectedSlot.label} ·{" "}
-            {data.service.name}
+            {formatSlotSummary(selectedSlot)} · {data.service.name}
           </p>
 
           <form className="mt-4 space-y-3" onSubmit={handleSubmit}>

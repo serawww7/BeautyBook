@@ -1,7 +1,8 @@
 import {
   addCalendarDays,
   formatDateKey,
-  formatDayHeading,
+  formatDateLabel,
+  formatDayTitle,
   formatTimeLabel,
   getWeekdayInTimeZone,
   getZonedParts,
@@ -29,7 +30,8 @@ export type TimeSlot = {
 
 export type DaySlots = {
   dateKey: string;
-  heading: string;
+  title: string;
+  dateLabel: string;
   slots: TimeSlot[];
 };
 
@@ -122,7 +124,8 @@ export function buildAvailableDays(params: {
 
     days.push({
       dateKey: formatDateKey(parts),
-      heading: formatDayHeading(offset, parts),
+      title: formatDayTitle(offset, parts, timeZone),
+      dateLabel: formatDateLabel(parts, timeZone),
       slots,
     });
   }
