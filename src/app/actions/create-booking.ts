@@ -1,5 +1,6 @@
 "use server";
 
+import { verifyBookingAbuseProtection } from "@/lib/booking/abuse-protection";
 import { createClient } from "@/lib/supabase/server";
 
 export type CreateBookingInput = {
@@ -10,14 +11,23 @@ export type CreateBookingInput = {
   endsAt: string;
   fullName: string;
   phone: string;
+  /** Optional; used when Cloudflare Turnstile is enabled later */
+  captchaToken?: string;
 };
 
 export type CreateBookingResult =
   | { ok: true; bookingId: string }
-  | { ok: false; code: "SLOT_TAKEN" | "VALIDATION" | "UNKNOWN"; message: string };
+  | {
+      ok: false;
+      code: "SLOT_TAKEN" | "PHONE_RATE_LIMIT" | "CAPTCHA_FAILED" | "VALIDATION" | "UNKNOWN";
+      message: string;
+    };
 
 const SLOT_TAKEN_MESSAGE =
   "На жаль, цей час щойно став недоступним. Будь ласка, виберіть інший.";
+
+const PHONE_RATE_LIMIT_MESSAGE =
+  "За цим номером уже є кілька активних записів за останню добу. Спробуйте пізніше або зверніться до майстра.";
 
 export async function createBooking(
   input: CreateBookingInput,
@@ -41,6 +51,18 @@ export async function createBooking(
     };
   }
 
+  const abuseCheck = await verifyBookingAbuseProtection({
+    captchaToken: input.captchaToken,
+  });
+
+  if (!abuseCheck.ok) {
+    return {
+      ok: false,
+      code: abuseCheck.code,
+      message: abuseCheck.message,
+    };
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("book_appointment", {
@@ -58,6 +80,14 @@ export async function createBooking(
 
     if (message.includes("SLOT_TAKEN") || message.includes("exclusion")) {
       return { ok: false, code: "SLOT_TAKEN", message: SLOT_TAKEN_MESSAGE };
+    }
+
+    if (message.includes("PHONE_RATE_LIMIT")) {
+      return {
+        ok: false,
+        code: "PHONE_RATE_LIMIT",
+        message: PHONE_RATE_LIMIT_MESSAGE,
+      };
     }
 
     return {

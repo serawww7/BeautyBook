@@ -80,6 +80,47 @@ export type Database = {
         };
         Returns: string;
       };
+      admin_list_today_bookings: {
+        Args: { p_master_id: string };
+        Returns: {
+          id: string;
+          starts_at: string;
+          ends_at: string;
+          status: BookingStatus;
+          notes: string | null;
+          client_name: string;
+          client_phone: string;
+          service_name: string;
+          service_price: number;
+        }[];
+      };
+      admin_get_booking: {
+        Args: { p_booking_id: string };
+        Returns: {
+          id: string;
+          starts_at: string;
+          ends_at: string;
+          status: BookingStatus;
+          notes: string | null;
+          client_name: string;
+          client_phone: string;
+          service_name: string;
+          service_price: number;
+          salon_timezone: string;
+        }[];
+      };
+      admin_update_booking_status: {
+        Args: { p_booking_id: string; p_status: BookingStatus };
+        Returns: string;
+      };
+      admin_find_client_by_phone: {
+        Args: { p_phone: string };
+        Returns: {
+          id: string;
+          full_name: string;
+          phone: string;
+        }[];
+      };
     };
     Enums: {
       booking_status: BookingStatus;

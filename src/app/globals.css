@@ -9,6 +9,14 @@
   --primary: #171717;
   --primary-foreground: #fafafa;
   --destructive: #b42318;
+  --status-pending: #fef3c7;
+  --status-pending-foreground: #92400e;
+  --status-confirmed: #dcfce7;
+  --status-confirmed-foreground: #166534;
+  --status-cancelled: #f3f4f6;
+  --status-cancelled-foreground: #4b5563;
+  --status-completed: #dbeafe;
+  --status-completed-foreground: #1e40af;
 }
 
 .dark {
@@ -20,6 +28,14 @@
   --primary: #ededed;
   --primary-foreground: #0a0a0a;
   --destructive: #f97066;
+  --status-pending: #78350f;
+  --status-pending-foreground: #fde68a;
+  --status-confirmed: #14532d;
+  --status-confirmed-foreground: #bbf7d0;
+  --status-cancelled: #27272a;
+  --status-cancelled-foreground: #a1a1aa;
+  --status-completed: #1e3a8a;
+  --status-completed-foreground: #bfdbfe;
 }
 
 @theme inline {
@@ -31,6 +47,14 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-destructive: var(--destructive);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-foreground: var(--status-pending-foreground);
+  --color-status-confirmed: var(--status-confirmed);
+  --color-status-confirmed-foreground: var(--status-confirmed-foreground);
+  --color-status-cancelled: var(--status-cancelled);
+  --color-status-cancelled-foreground: var(--status-cancelled-foreground);
+  --color-status-completed: var(--status-completed);
+  --color-status-completed-foreground: var(--status-completed-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
