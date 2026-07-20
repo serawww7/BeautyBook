@@ -1,13 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-  type FormEvent,
-} from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { findClientByPhone } from "@/app/actions/admin";
 import {
@@ -42,7 +36,7 @@ export function AdminNewBookingForm({
   const [phone, setPhone] = useState("");
   const [nameFromClient, setNameFromClient] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const trimmed = phone.trim();
@@ -73,13 +67,14 @@ export function AdminNewBookingForm({
     return `${selectedSlot.dayTitle}, ${selectedSlot.dateLabel}, ${selectedSlot.label}`;
   }, [selectedSlot]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedSlot) return;
+    if (!selectedSlot || isSubmitting) return;
 
     setError(null);
+    setIsSubmitting(true);
 
-    startTransition(async () => {
+    try {
       const result: CreateBookingResult = await createBooking({
         salonId,
         masterId,
@@ -96,12 +91,16 @@ export function AdminNewBookingForm({
           setSelectedSlot(null);
           router.refresh();
         }
+        setIsSubmitting(false);
         return;
       }
 
-      router.push(`/admin/bookings/${result.bookingId}`);
-      router.refresh();
-    });
+      // Keep button disabled until unmount — prevents double submit during navigation.
+      router.replace("/admin");
+    } catch {
+      setError("Не вдалося створити запис. Спробуйте ще раз.");
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -135,6 +134,7 @@ export function AdminNewBookingForm({
                       <button
                         key={slot.startsAt}
                         type="button"
+                        disabled={isSubmitting}
                         onClick={() =>
                           setSelectedSlot({
                             ...slot,
@@ -144,8 +144,8 @@ export function AdminNewBookingForm({
                         }
                         className={
                           isSelected
-                            ? "rounded-lg bg-primary px-2 py-3 text-sm font-medium text-primary-foreground"
-                            : "rounded-lg border border-border bg-background px-2 py-3 text-sm font-medium text-foreground"
+                            ? "rounded-lg bg-primary px-2 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                            : "rounded-lg border border-border bg-background px-2 py-3 text-sm font-medium text-foreground disabled:opacity-60"
                         }
                       >
                         {slot.label}
@@ -176,11 +176,12 @@ export function AdminNewBookingForm({
                 autoComplete="tel"
                 inputMode="tel"
                 value={phone}
+                disabled={isSubmitting}
                 onChange={(event) => {
                   setPhone(event.target.value);
                   setNameFromClient(false);
                 }}
-                className="w-full rounded-lg border border-border bg-background px-3 py-3 text-base outline-none focus:border-foreground"
+                className="w-full rounded-lg border border-border bg-background px-3 py-3 text-base outline-none focus:border-foreground disabled:opacity-60"
                 placeholder="+380..."
               />
             </label>
@@ -192,11 +193,12 @@ export function AdminNewBookingForm({
                 name="fullName"
                 autoComplete="name"
                 value={fullName}
+                disabled={isSubmitting}
                 onChange={(event) => {
                   setFullName(event.target.value);
                   setNameFromClient(false);
                 }}
-                className="w-full rounded-lg border border-border bg-background px-3 py-3 text-base outline-none focus:border-foreground"
+                className="w-full rounded-lg border border-border bg-background px-3 py-3 text-base outline-none focus:border-foreground disabled:opacity-60"
                 placeholder="Імʼя клієнта"
               />
               {nameFromClient ? (
@@ -214,10 +216,10 @@ export function AdminNewBookingForm({
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isSubmitting}
               className="w-full rounded-lg bg-primary px-4 py-3.5 text-base font-medium text-primary-foreground disabled:opacity-60"
             >
-              {isPending ? "Зберігаємо..." : "Створити запис"}
+              {isSubmitting ? "Зберігаємо..." : "Створити запис"}
             </button>
           </form>
         </section>
