@@ -162,3 +162,38 @@ export async function getWorkingDayExceptions(masterId: string) {
       : [],
   }));
 }
+
+export async function getMasterServices(masterId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("admin_list_services", {
+    p_master_id: masterId,
+  });
+
+  if (error || !data) return [];
+
+  return (
+    data as {
+      id: string;
+      name: string;
+      duration_minutes: number;
+      price: number;
+      is_active: boolean;
+      created_at: string;
+      used_in_bookings: boolean;
+    }[]
+  ).map((row) => ({
+    id: row.id,
+    name: row.name,
+    durationMinutes: row.duration_minutes,
+    price: Number(row.price),
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    usedInBookings: row.used_in_bookings,
+  }));
+}
+
+export async function getMasterService(masterId: string, serviceId: string) {
+  const services = await getMasterServices(masterId);
+  return services.find((service) => service.id === serviceId) ?? null;
+}

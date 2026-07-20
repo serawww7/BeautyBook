@@ -23,9 +23,8 @@ export default async function AdminNewBookingPage() {
       <AdminNewBookingForm
         salonId={data.salon.id}
         masterId={data.master.id}
-        serviceId={data.service.id}
-        serviceName={data.service.name}
-        days={data.days}
+        services={data.services}
+        daysByServiceId={data.daysByServiceId}
       />
     </div>
   );

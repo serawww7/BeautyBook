@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const ACTIONS = [
   { href: "/admin/new", label: "Новий запис", primary: true },
+  { href: "/admin/services", label: "Послуги", primary: false },
   { href: "/admin/schedule", label: "Графік", primary: false },
   { href: "/admin/exceptions", label: "Винятки", primary: false },
 ] as const;

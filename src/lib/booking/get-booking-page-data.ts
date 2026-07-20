@@ -5,7 +5,14 @@ import {
   formatDateKey,
   getZonedParts,
 } from "./datetime";
-import { buildAvailableDays } from "./slots";
+import { buildAvailableDays, type DaySlots } from "./slots";
+
+export type PublicService = {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  price: number;
+};
 
 export type BookingPageData = {
   salon: {
@@ -18,13 +25,8 @@ export type BookingPageData = {
     id: string;
     displayName: string;
   };
-  service: {
-    id: string;
-    name: string;
-    durationMinutes: number;
-    price: number;
-  };
-  days: ReturnType<typeof buildAvailableDays>;
+  services: PublicService[];
+  daysByServiceId: Record<string, DaySlots[]>;
 };
 
 export async function getBookingPageData(
@@ -51,16 +53,21 @@ export async function getBookingPageData(
 
   if (masterError || !master) return null;
 
-  const { data: service, error: serviceError } = await supabase
+  const { data: servicesData, error: servicesError } = await supabase
     .from("services")
     .select("id, name, duration_minutes, price")
     .eq("master_id", master.id)
     .eq("is_active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
-  if (serviceError || !service) return null;
+  if (servicesError || !servicesData || servicesData.length === 0) return null;
+
+  const services: PublicService[] = servicesData.map((service) => ({
+    id: service.id,
+    name: service.name,
+    durationMinutes: service.duration_minutes,
+    price: Number(service.price),
+  }));
 
   const rangeStart = new Date();
   const rangeEnd = new Date(rangeStart.getTime() + 8 * 24 * 60 * 60 * 1000);
@@ -89,19 +96,25 @@ export async function getBookingPageData(
         .lte("date", rangeEndDate),
     ]);
 
-  const days = buildAvailableDays({
-    timeZone: salon.timezone,
-    durationMinutes: service.duration_minutes,
-    workingHours: workingHours ?? [],
-    bookings: bookings ?? [],
-    exceptions: (exceptions ?? []).map((row) => ({
-      date: row.date as string,
-      is_day_off: Boolean(row.is_day_off),
-      time_ranges: Array.isArray(row.time_ranges)
-        ? (row.time_ranges as { start_time: string; end_time: string }[])
-        : [],
-    })),
-  });
+  const exceptionRows = (exceptions ?? []).map((row) => ({
+    date: row.date as string,
+    is_day_off: Boolean(row.is_day_off),
+    time_ranges: Array.isArray(row.time_ranges)
+      ? (row.time_ranges as { start_time: string; end_time: string }[])
+      : [],
+  }));
+
+  const daysByServiceId: Record<string, DaySlots[]> = {};
+
+  for (const service of services) {
+    daysByServiceId[service.id] = buildAvailableDays({
+      timeZone: salon.timezone,
+      durationMinutes: service.durationMinutes,
+      workingHours: workingHours ?? [],
+      bookings: bookings ?? [],
+      exceptions: exceptionRows,
+    });
+  }
 
   return {
     salon: {
@@ -114,12 +127,7 @@ export async function getBookingPageData(
       id: master.id,
       displayName: master.display_name,
     },
-    service: {
-      id: service.id,
-      name: service.name,
-      durationMinutes: service.duration_minutes,
-      price: Number(service.price),
-    },
-    days,
+    services,
+    daysByServiceId,
   };
 }

@@ -8,14 +8,14 @@ import {
   createBooking,
   type CreateBookingResult,
 } from "@/app/actions/create-booking";
+import type { PublicService } from "@/lib/booking/get-booking-page-data";
 import type { DaySlots, TimeSlot } from "@/lib/booking/slots";
 
 type AdminNewBookingFormProps = {
   salonId: string;
   masterId: string;
-  serviceId: string;
-  serviceName: string;
-  days: DaySlots[];
+  services: PublicService[];
+  daysByServiceId: Record<string, DaySlots[]>;
 };
 
 type SelectedSlot = TimeSlot & {
@@ -26,17 +26,25 @@ type SelectedSlot = TimeSlot & {
 export function AdminNewBookingForm({
   salonId,
   masterId,
-  serviceId,
-  serviceName,
-  days,
+  services,
+  daysByServiceId,
 }: AdminNewBookingFormProps) {
   const router = useRouter();
+  const [selectedServiceId, setSelectedServiceId] = useState(
+    services[0]?.id ?? "",
+  );
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [nameFromClient, setNameFromClient] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedService =
+    services.find((service) => service.id === selectedServiceId) ?? services[0];
+  const days = selectedService
+    ? (daysByServiceId[selectedService.id] ?? [])
+    : [];
 
   useEffect(() => {
     const trimmed = phone.trim();
@@ -69,7 +77,7 @@ export function AdminNewBookingForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedSlot || isSubmitting) return;
+    if (!selectedSlot || !selectedService || isSubmitting) return;
 
     setError(null);
     setIsSubmitting(true);
@@ -78,7 +86,7 @@ export function AdminNewBookingForm({
       const result: CreateBookingResult = await createBooking({
         salonId,
         masterId,
-        serviceId,
+        serviceId: selectedService.id,
         startsAt: selectedSlot.startsAt,
         endsAt: selectedSlot.endsAt,
         fullName,
@@ -95,7 +103,6 @@ export function AdminNewBookingForm({
         return;
       }
 
-      // Keep button disabled until unmount — prevents double submit during navigation.
       router.replace("/admin");
     } catch {
       setError("Не вдалося створити запис. Спробуйте ще раз.");
@@ -107,7 +114,33 @@ export function AdminNewBookingForm({
     <div className="space-y-6">
       <section>
         <h2 className="text-sm font-medium text-muted-foreground">Послуга</h2>
-        <p className="mt-2 text-base font-medium">{serviceName}</p>
+        <div className="mt-3 space-y-2">
+          {services.map((service) => {
+            const isSelected = service.id === selectedService?.id;
+
+            return (
+              <button
+                key={service.id}
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => {
+                  setSelectedServiceId(service.id);
+                  setSelectedSlot(null);
+                }}
+                className={
+                  isSelected
+                    ? "w-full rounded-xl border border-foreground px-4 py-3 text-left disabled:opacity-60"
+                    : "w-full rounded-xl border border-border px-4 py-3 text-left disabled:opacity-60"
+                }
+              >
+                <p className="font-medium">{service.name}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {service.durationMinutes} хв
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <section>
@@ -159,11 +192,13 @@ export function AdminNewBookingForm({
         )}
       </section>
 
-      {selectedSlot ? (
+      {selectedSlot && selectedService ? (
         <section className="border-t border-border pt-6">
           <h2 className="text-sm font-medium text-muted-foreground">Клієнт</h2>
           {summary ? (
-            <p className="mt-2 text-sm text-foreground">{summary}</p>
+            <p className="mt-2 text-sm text-foreground">
+              {summary} · {selectedService.name}
+            </p>
           ) : null}
 
           <form className="mt-4 space-y-3" onSubmit={handleSubmit}>

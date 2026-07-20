@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 
 import {
   createBooking,
@@ -19,12 +19,25 @@ type SelectedSlot = TimeSlot & {
   dateLabel: string;
 };
 
-function formatSlotSummary(slot: Pick<SelectedSlot, "dayTitle" | "dateLabel" | "label">) {
+function formatSlotSummary(
+  slot: Pick<SelectedSlot, "dayTitle" | "dateLabel" | "label">,
+) {
   return `${slot.dayTitle}, ${slot.dateLabel}, ${slot.label}`;
+}
+
+function formatPrice(price: number) {
+  return new Intl.NumberFormat("uk-UA", {
+    style: "currency",
+    currency: "UAH",
+    maximumFractionDigits: 0,
+  }).format(price);
 }
 
 export function BookingFlow({ data }: BookingFlowProps) {
   const router = useRouter();
+  const [selectedServiceId, setSelectedServiceId] = useState(
+    data.services[0]?.id ?? "",
+  );
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -33,18 +46,23 @@ export function BookingFlow({ data }: BookingFlowProps) {
     bookingId: string;
     slot: SelectedSlot;
     fullName: string;
+    serviceName: string;
   } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const priceLabel = useMemo(
-    () =>
-      new Intl.NumberFormat("uk-UA", {
-        style: "currency",
-        currency: "UAH",
-        maximumFractionDigits: 0,
-      }).format(data.service.price),
-    [data.service.price],
-  );
+  const selectedService =
+    data.services.find((service) => service.id === selectedServiceId) ??
+    data.services[0];
+
+  const days = selectedService
+    ? (data.daysByServiceId[selectedService.id] ?? [])
+    : [];
+
+  function handleSelectService(serviceId: string) {
+    setSelectedServiceId(serviceId);
+    setSelectedSlot(null);
+    setError(null);
+  }
 
   function handleSelectSlot(
     dayTitle: string,
@@ -57,7 +75,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedSlot) return;
+    if (!selectedSlot || !selectedService) return;
 
     setError(null);
 
@@ -65,7 +83,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
       const result: CreateBookingResult = await createBooking({
         salonId: data.salon.id,
         masterId: data.master.id,
-        serviceId: data.service.id,
+        serviceId: selectedService.id,
         startsAt: selectedSlot.startsAt,
         endsAt: selectedSlot.endsAt,
         fullName,
@@ -85,6 +103,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
         bookingId: result.bookingId,
         slot: selectedSlot,
         fullName: fullName.trim(),
+        serviceName: selectedService.name,
       });
     });
   }
@@ -101,7 +120,7 @@ export function BookingFlow({ data }: BookingFlowProps) {
             {confirmed.fullName}, чекаємо на вас
           </p>
           <div className="mt-6 space-y-1 text-sm text-muted-foreground">
-            <p>{data.service.name}</p>
+            <p>{confirmed.serviceName}</p>
             <p>{formatSlotSummary(confirmed.slot)}</p>
             <p>{data.master.displayName}</p>
           </div>
@@ -127,27 +146,46 @@ export function BookingFlow({ data }: BookingFlowProps) {
 
       <section className="mt-8">
         <h2 className="text-sm font-medium text-muted-foreground">Послуги</h2>
-        <div className="mt-3 rounded-xl border border-border px-4 py-3">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="font-medium">{data.service.name}</p>
-            <p className="text-sm text-muted-foreground">{priceLabel}</p>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {data.service.durationMinutes} хв
-          </p>
+        <div className="mt-3 space-y-2">
+          {data.services.map((service) => {
+            const isSelected = service.id === selectedService?.id;
+
+            return (
+              <button
+                key={service.id}
+                type="button"
+                onClick={() => handleSelectService(service.id)}
+                className={
+                  isSelected
+                    ? "w-full rounded-xl border border-foreground bg-background px-4 py-3 text-left"
+                    : "w-full rounded-xl border border-border bg-background px-4 py-3 text-left"
+                }
+              >
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="font-medium">{service.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatPrice(service.price)}
+                  </p>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {service.durationMinutes} хв
+                </p>
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-medium text-muted-foreground">Час</h2>
 
-        {data.days.length === 0 ? (
+        {days.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
             На найближчі дні вільних слотів немає.
           </p>
         ) : (
           <div className="mt-3 space-y-6">
-            {data.days.map((day) => (
+            {days.map((day) => (
               <div key={day.dateKey}>
                 <div>
                   <h3 className="text-base font-semibold capitalize">
@@ -183,13 +221,13 @@ export function BookingFlow({ data }: BookingFlowProps) {
         )}
       </section>
 
-      {selectedSlot ? (
+      {selectedSlot && selectedService ? (
         <section className="mt-8 border-t border-border pt-6">
           <h2 className="text-sm font-medium text-muted-foreground">
             Ваші дані
           </h2>
           <p className="mt-2 text-sm text-foreground">
-            {formatSlotSummary(selectedSlot)} · {data.service.name}
+            {formatSlotSummary(selectedSlot)} · {selectedService.name}
           </p>
 
           <form className="mt-4 space-y-3" onSubmit={handleSubmit}>

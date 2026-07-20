@@ -143,6 +143,37 @@ export type Database = {
         };
         Returns: null;
       };
+      admin_list_services: {
+        Args: { p_master_id: string };
+        Returns: {
+          id: string;
+          name: string;
+          duration_minutes: number;
+          price: number;
+          is_active: boolean;
+          created_at: string;
+          used_in_bookings: boolean;
+        }[];
+      };
+      admin_upsert_service: {
+        Args: {
+          p_master_id: string;
+          p_name: string;
+          p_duration_minutes: number;
+          p_price: number;
+          p_is_active: boolean;
+          p_id?: string | null;
+        };
+        Returns: string;
+      };
+      admin_hide_service: {
+        Args: { p_id: string; p_master_id: string };
+        Returns: string;
+      };
+      admin_delete_service: {
+        Args: { p_id: string; p_master_id: string };
+        Returns: null;
+      };
       admin_upsert_working_day_exception: {
         Args: {
           p_master_id: string;

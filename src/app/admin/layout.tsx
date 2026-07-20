@@ -29,6 +29,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             Сьогодні
           </Link>
           <Link
+            href="/admin/services"
+            className="rounded-lg border border-border px-3 py-2 text-foreground"
+          >
+            Послуги
+          </Link>
+          <Link
             href="/admin/schedule"
             className="rounded-lg border border-border px-3 py-2 text-foreground"
           >
