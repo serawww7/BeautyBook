@@ -122,3 +122,22 @@ export async function getBookingDetail(
     salonTimezone: row.salon_timezone,
   };
 }
+
+export async function getWorkingHours(masterId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("working_hours")
+    .select("weekday, start_time, end_time")
+    .eq("master_id", masterId)
+    .order("weekday", { ascending: true })
+    .order("start_time", { ascending: true });
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    weekday: row.weekday as number,
+    start_time: row.start_time as string,
+    end_time: row.end_time as string,
+  }));
+}

@@ -121,6 +121,17 @@ export type Database = {
           phone: string;
         }[];
       };
+      admin_save_working_hours: {
+        Args: {
+          p_master_id: string;
+          p_intervals: {
+            weekday: number;
+            start_time: string;
+            end_time: string;
+          }[];
+        };
+        Returns: null;
+      };
     };
     Enums: {
       booking_status: BookingStatus;
