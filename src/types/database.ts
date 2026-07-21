@@ -132,6 +132,25 @@ export type Database = {
         };
         Returns: string;
       };
+      admin_get_client_booking_history: {
+        Args: { p_booking_id: string };
+        Returns: {
+          first_visit_at: string | null;
+          last_booking_at: string | null;
+          total_count: number;
+          completed_count: number;
+          cancelled_count: number;
+          bookings: {
+            id: string;
+            starts_at: string;
+            ends_at: string;
+            status: BookingStatus;
+            service_name: string;
+            service_price: number;
+            is_current: boolean;
+          }[];
+        };
+      };
       admin_update_booking_status: {
         Args: { p_booking_id: string; p_status: BookingStatus };
         Returns: string;

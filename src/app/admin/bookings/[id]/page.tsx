@@ -2,13 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BookingStatusActions } from "@/components/admin/booking-status-actions";
+import { ClientBookingHistoryList } from "@/components/admin/client-booking-history";
 import { StatusBadge } from "@/components/admin/status-badge";
 import {
   formatAdminDate,
   formatAdminTime,
   formatPrice,
 } from "@/lib/admin/format";
-import { getBookingDetail } from "@/lib/admin/queries";
+import {
+  getBookingDetail,
+  getClientBookingHistory,
+} from "@/lib/admin/queries";
 
 type BookingDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -18,7 +22,10 @@ export default async function BookingDetailPage({
   params,
 }: BookingDetailPageProps) {
   const { id } = await params;
-  const booking = await getBookingDetail(id);
+  const [booking, history] = await Promise.all([
+    getBookingDetail(id),
+    getClientBookingHistory(id),
+  ]);
 
   if (!booking) {
     notFound();
@@ -44,6 +51,43 @@ export default async function BookingDetailPage({
           </div>
           <StatusBadge status={booking.status} />
         </div>
+
+        {history ? (
+          <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-4 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Перший візит</dt>
+              <dd className="font-medium">
+                {history.firstVisitAt
+                  ? formatAdminDate(history.firstVisitAt, timeZone)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Останній запис</dt>
+              <dd className="font-medium">
+                {history.lastBookingAt
+                  ? formatAdminDate(history.lastBookingAt, timeZone)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Усі записи</dt>
+              <dd className="font-medium tabular-nums">{history.totalCount}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Завершені</dt>
+              <dd className="font-medium tabular-nums">
+                {history.completedCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Скасовані</dt>
+              <dd className="font-medium tabular-nums">
+                {history.cancelledCount}
+              </dd>
+            </div>
+          </dl>
+        ) : null}
 
         <dl className="mt-6 space-y-3 text-sm">
           <div className="flex justify-between gap-3">
@@ -85,6 +129,13 @@ export default async function BookingDetailPage({
       ) : null}
 
       <BookingStatusActions bookingId={booking.id} status={booking.status} />
+
+      {history ? (
+        <ClientBookingHistoryList
+          bookings={history.bookings}
+          timeZone={timeZone}
+        />
+      ) : null}
     </div>
   );
 }

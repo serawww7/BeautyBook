@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { BookingStatus } from "@/types/database";
 
-import type { AdminBookingDetail, AdminBookingListItem } from "./types";
+import type {
+  AdminBookingDetail,
+  AdminBookingListItem,
+  ClientBookingHistory,
+} from "./types";
 
 type TodayBookingRow = {
   id: string;
@@ -128,6 +132,55 @@ export async function getBookingDetail(
     masterId: row.master_id,
     serviceId: row.service_id,
     serviceDurationMinutes: row.service_duration_minutes,
+  };
+}
+
+export async function getClientBookingHistory(
+  bookingId: string,
+): Promise<ClientBookingHistory | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "admin_get_client_booking_history",
+    { p_booking_id: bookingId },
+  );
+
+  if (error || !data) return null;
+
+  const row = data as {
+    first_visit_at: string | null;
+    last_booking_at: string | null;
+    total_count: number;
+    completed_count: number;
+    cancelled_count: number;
+    bookings:
+      | {
+          id: string;
+          starts_at: string;
+          ends_at: string;
+          status: BookingStatus;
+          service_name: string;
+          service_price: number;
+          is_current: boolean;
+        }[]
+      | null;
+  };
+
+  return {
+    firstVisitAt: row.first_visit_at,
+    lastBookingAt: row.last_booking_at,
+    totalCount: Number(row.total_count ?? 0),
+    completedCount: Number(row.completed_count ?? 0),
+    cancelledCount: Number(row.cancelled_count ?? 0),
+    bookings: (row.bookings ?? []).map((item) => ({
+      id: item.id,
+      startsAt: item.starts_at,
+      endsAt: item.ends_at,
+      status: item.status,
+      serviceName: item.service_name,
+      servicePrice: Number(item.service_price),
+      isCurrent: Boolean(item.is_current),
+    })),
   };
 }
 

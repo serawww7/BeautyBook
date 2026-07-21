@@ -19,3 +19,22 @@ export type AdminBookingDetail = AdminBookingListItem & {
   serviceId: string;
   serviceDurationMinutes: number;
 };
+
+export type ClientHistoryItem = {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  status: BookingStatus;
+  serviceName: string;
+  servicePrice: number;
+  isCurrent: boolean;
+};
+
+export type ClientBookingHistory = {
+  firstVisitAt: string | null;
+  lastBookingAt: string | null;
+  totalCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  bookings: ClientHistoryItem[];
+};
