@@ -4,6 +4,7 @@ import {
   getZonedParts,
 } from "@/lib/booking/datetime";
 import { buildAvailableDays } from "@/lib/booking/slots";
+import { DEMO_SALON_SLUG, type TenantScope } from "@/lib/tenant/config";
 
 import { buildDashboardStats, findNextBooking } from "./dashboard";
 import {
@@ -13,8 +14,10 @@ import {
   getWorkingHours,
 } from "./queries";
 
-export async function getAdminDashboard(slug = "marina") {
-  const context = await getAdminContext(slug);
+export async function getAdminDashboard(
+  scope: TenantScope | string = { salonSlug: DEMO_SALON_SLUG },
+) {
+  const context = await getAdminContext(scope);
   if (!context) return null;
 
   const now = new Date();

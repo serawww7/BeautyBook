@@ -3,9 +3,10 @@ import Link from "next/link";
 import { ScheduleEditor } from "@/components/admin/schedule-editor";
 import { getAdminContext, getWorkingHours } from "@/lib/admin/queries";
 import { buildScheduleDays } from "@/lib/admin/schedule";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 export default async function AdminSchedulePage() {
-  const context = await getAdminContext("marina");
+  const context = await getAdminContext({ salonSlug: DEMO_SALON_SLUG });
 
   if (!context) {
     return (

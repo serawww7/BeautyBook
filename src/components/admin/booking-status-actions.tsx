@@ -8,6 +8,7 @@ import type { BookingStatus } from "@/types/database";
 
 type BookingStatusActionsProps = {
   bookingId: string;
+  masterId: string;
   status: BookingStatus;
 };
 
@@ -19,6 +20,7 @@ const ACTIONS: { status: BookingStatus; label: string }[] = [
 
 export function BookingStatusActions({
   bookingId,
+  masterId,
   status,
 }: BookingStatusActionsProps) {
   const router = useRouter();
@@ -28,7 +30,7 @@ export function BookingStatusActions({
   function handleUpdate(nextStatus: BookingStatus) {
     setError(null);
     startTransition(async () => {
-      const result = await updateBookingStatus(bookingId, nextStatus);
+      const result = await updateBookingStatus(bookingId, masterId, nextStatus);
       if (!result.ok) {
         setError(result.message);
         return;

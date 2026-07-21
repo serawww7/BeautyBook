@@ -2,9 +2,10 @@ import Link from "next/link";
 
 import { formatPrice } from "@/lib/admin/format";
 import { getAdminContext, getMasterServices } from "@/lib/admin/queries";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 export default async function AdminServicesPage() {
-  const context = await getAdminContext("marina");
+  const context = await getAdminContext({ salonSlug: DEMO_SALON_SLUG });
 
   if (!context) {
     return (

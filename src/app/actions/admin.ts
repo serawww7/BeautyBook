@@ -19,10 +19,15 @@ const ALLOWED_STATUSES: BookingStatus[] = [
 
 export async function updateBookingStatus(
   bookingId: string,
+  masterId: string,
   status: BookingStatus,
 ): Promise<UpdateBookingStatusResult> {
   if (!ALLOWED_STATUSES.includes(status)) {
     return { ok: false, message: "Недопустимий статус." };
+  }
+
+  if (!masterId) {
+    return { ok: false, message: "Не вдалося змінити статус." };
   }
 
   const supabase = await createClient();
@@ -30,6 +35,7 @@ export async function updateBookingStatus(
   const { error } = await supabase.rpc("admin_update_booking_status", {
     p_booking_id: bookingId,
     p_status: status,
+    p_master_id: masterId,
   });
 
   if (error) {
@@ -45,15 +51,21 @@ export type RescheduleBookingResult =
 
 export async function rescheduleBooking(input: {
   bookingId: string;
+  masterId: string;
   startsAt: string;
   endsAt: string;
 }): Promise<RescheduleBookingResult> {
+  if (!input.masterId) {
+    return { ok: false, message: "Не вдалося перенести запис." };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("admin_reschedule_booking", {
     p_booking_id: input.bookingId,
     p_starts_at: input.startsAt,
     p_ends_at: input.endsAt,
+    p_master_id: input.masterId,
   });
 
   if (error) {

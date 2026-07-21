@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { DEMO_SALON_SLUG, type TenantScope } from "@/lib/tenant/config";
+import { resolveTenantContext } from "@/lib/tenant/context";
 
 import { getMasterAvailableDays } from "./get-master-available-days";
 import type { DaySlots } from "./slots";
@@ -26,33 +28,20 @@ export type BookingPageData = {
 };
 
 export async function getBookingPageData(
-  slug = "marina",
+  scope: TenantScope | string = { salonSlug: DEMO_SALON_SLUG },
 ): Promise<BookingPageData | null> {
+  const normalized: TenantScope =
+    typeof scope === "string" ? { salonSlug: scope } : scope;
+
+  const tenant = await resolveTenantContext(normalized);
+  if (!tenant) return null;
+
   const supabase = await createClient();
-
-  const { data: salon, error: salonError } = await supabase
-    .from("salons")
-    .select("id, name, slug, timezone")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (salonError || !salon) return null;
-
-  const { data: master, error: masterError } = await supabase
-    .from("masters")
-    .select("id, display_name")
-    .eq("salon_id", salon.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (masterError || !master) return null;
 
   const { data: servicesData, error: servicesError } = await supabase
     .from("services")
     .select("id, name, duration_minutes, price")
-    .eq("master_id", master.id)
+    .eq("master_id", tenant.master.id)
     .eq("is_active", true)
     .order("created_at", { ascending: true });
 
@@ -66,21 +55,16 @@ export async function getBookingPageData(
   }));
 
   const daysByServiceId = await getMasterAvailableDays({
-    timeZone: salon.timezone,
-    masterId: master.id,
+    timeZone: tenant.salon.timezone,
+    masterId: tenant.master.id,
     services,
   });
 
   return {
-    salon: {
-      id: salon.id,
-      name: salon.name,
-      slug: salon.slug,
-      timezone: salon.timezone,
-    },
+    salon: tenant.salon,
     master: {
-      id: master.id,
-      displayName: master.display_name,
+      id: tenant.master.id,
+      displayName: tenant.master.displayName,
     },
     services,
     daysByServiceId,

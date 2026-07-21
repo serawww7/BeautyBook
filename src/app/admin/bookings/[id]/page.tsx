@@ -10,9 +10,11 @@ import {
   formatPrice,
 } from "@/lib/admin/format";
 import {
+  getAdminContext,
   getBookingDetail,
   getClientBookingHistory,
 } from "@/lib/admin/queries";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 type BookingDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -22,9 +24,14 @@ export default async function BookingDetailPage({
   params,
 }: BookingDetailPageProps) {
   const { id } = await params;
+  const context = await getAdminContext({ salonSlug: DEMO_SALON_SLUG });
+  if (!context) {
+    notFound();
+  }
+
   const [booking, history] = await Promise.all([
-    getBookingDetail(id),
-    getClientBookingHistory(id),
+    getBookingDetail(id, context.master.id),
+    getClientBookingHistory(id, context.master.id),
   ]);
 
   if (!booking) {
@@ -128,7 +135,11 @@ export default async function BookingDetailPage({
         </Link>
       ) : null}
 
-      <BookingStatusActions bookingId={booking.id} status={booking.status} />
+      <BookingStatusActions
+        bookingId={booking.id}
+        masterId={booking.masterId}
+        status={booking.status}
+      />
 
       {history ? (
         <ClientBookingHistoryList

@@ -106,7 +106,7 @@ export type Database = {
         }[];
       };
       admin_get_booking: {
-        Args: { p_booking_id: string };
+        Args: { p_booking_id: string; p_master_id: string };
         Returns: {
           id: string;
           starts_at: string;
@@ -129,11 +129,12 @@ export type Database = {
           p_booking_id: string;
           p_starts_at: string;
           p_ends_at: string;
+          p_master_id: string;
         };
         Returns: string;
       };
       admin_get_client_booking_history: {
-        Args: { p_booking_id: string };
+        Args: { p_booking_id: string; p_master_id: string };
         Returns: {
           first_visit_at: string | null;
           last_booking_at: string | null;
@@ -152,8 +153,24 @@ export type Database = {
         };
       };
       admin_update_booking_status: {
-        Args: { p_booking_id: string; p_status: BookingStatus };
+        Args: {
+          p_booking_id: string;
+          p_status: BookingStatus;
+          p_master_id: string;
+        };
         Returns: string;
+      };
+      list_master_busy_intervals: {
+        Args: {
+          p_master_id: string;
+          p_range_start: string;
+          p_range_end: string;
+        };
+        Returns: {
+          id: string;
+          starts_at: string;
+          ends_at: string;
+        }[];
       };
       admin_find_client_by_phone: {
         Args: { p_phone: string };

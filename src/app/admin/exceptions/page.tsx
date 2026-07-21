@@ -5,9 +5,10 @@ import {
   getAdminContext,
   getWorkingDayExceptions,
 } from "@/lib/admin/queries";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 export default async function AdminExceptionsPage() {
-  const context = await getAdminContext("marina");
+  const context = await getAdminContext({ salonSlug: DEMO_SALON_SLUG });
 
   if (!context) {
     return (

@@ -4,9 +4,10 @@ import { DashboardStatsGrid } from "@/components/admin/dashboard-stats-grid";
 import { NextClientCard } from "@/components/admin/next-client-card";
 import { formatAdminDate } from "@/lib/admin/format";
 import { getAdminDashboard } from "@/lib/admin/get-admin-dashboard";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 export default async function AdminPage() {
-  const dashboard = await getAdminDashboard("marina");
+  const dashboard = await getAdminDashboard({ salonSlug: DEMO_SALON_SLUG });
 
   if (!dashboard) {
     return (

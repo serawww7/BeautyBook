@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import type { BookingStatus } from "@/types/database";
+import {
+  resolveTenantContext,
+  type TenantContext,
+} from "@/lib/tenant/context";
+import { DEMO_SALON_SLUG, type TenantScope } from "@/lib/tenant/config";
 
 import type {
   AdminBookingDetail,
@@ -27,56 +32,32 @@ type BookingDetailRow = TodayBookingRow & {
   service_duration_minutes: number;
 };
 
-export async function getAdminContext(slug = "marina") {
-  const supabase = await createClient();
+/** @deprecated Prefer resolveTenantContext — kept as admin alias with service key. */
+export type AdminContext = {
+  salon: TenantContext["salon"];
+  master: {
+    id: string;
+    displayName: string;
+  };
+  service: TenantContext["primaryService"];
+};
 
-  const { data: salon } = await supabase
-    .from("salons")
-    .select("id, name, slug, timezone")
-    .eq("slug", slug)
-    .maybeSingle();
+export async function getAdminContext(
+  scope: TenantScope | string = { salonSlug: DEMO_SALON_SLUG },
+): Promise<AdminContext | null> {
+  const normalized: TenantScope =
+    typeof scope === "string" ? { salonSlug: scope } : scope;
 
-  if (!salon) return null;
-
-  const { data: master } = await supabase
-    .from("masters")
-    .select("id, display_name")
-    .eq("salon_id", salon.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!master) return null;
-
-  const { data: service } = await supabase
-    .from("services")
-    .select("id, name, duration_minutes, price")
-    .eq("master_id", master.id)
-    .eq("is_active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!service) return null;
+  const context = await resolveTenantContext(normalized);
+  if (!context) return null;
 
   return {
-    salon: {
-      id: salon.id,
-      name: salon.name,
-      slug: salon.slug,
-      timezone: salon.timezone,
-    },
+    salon: context.salon,
     master: {
-      id: master.id,
-      displayName: master.display_name,
+      id: context.master.id,
+      displayName: context.master.displayName,
     },
-    service: {
-      id: service.id,
-      name: service.name,
-      durationMinutes: service.duration_minutes,
-      price: Number(service.price),
-    },
+    service: context.primaryService,
   };
 }
 
@@ -106,11 +87,13 @@ export async function getTodayBookings(
 
 export async function getBookingDetail(
   bookingId: string,
+  masterId: string,
 ): Promise<AdminBookingDetail | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("admin_get_booking", {
     p_booking_id: bookingId,
+    p_master_id: masterId,
   });
 
   if (error || !data?.[0]) return null;
@@ -137,12 +120,16 @@ export async function getBookingDetail(
 
 export async function getClientBookingHistory(
   bookingId: string,
+  masterId: string,
 ): Promise<ClientBookingHistory | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc(
     "admin_get_client_booking_history",
-    { p_booking_id: bookingId },
+    {
+      p_booking_id: bookingId,
+      p_master_id: masterId,
+    },
   );
 
   if (error || !data) return null;

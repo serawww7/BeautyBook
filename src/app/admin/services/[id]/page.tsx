@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ServiceForm } from "@/components/admin/service-form";
 import { getAdminContext, getMasterService } from "@/lib/admin/queries";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 type EditServicePageProps = {
   params: Promise<{ id: string }>;
@@ -12,7 +13,7 @@ export default async function AdminEditServicePage({
   params,
 }: EditServicePageProps) {
   const { id } = await params;
-  const context = await getAdminContext("marina");
+  const context = await getAdminContext({ salonSlug: DEMO_SALON_SLUG });
 
   if (!context) {
     return (

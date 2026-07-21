@@ -8,6 +8,7 @@ import type { DaySlots, TimeSlot } from "@/lib/booking/slots";
 
 type RescheduleBookingFormProps = {
   bookingId: string;
+  masterId: string;
   serviceName: string;
   days: DaySlots[];
 };
@@ -19,6 +20,7 @@ type SelectedSlot = TimeSlot & {
 
 export function RescheduleBookingForm({
   bookingId,
+  masterId,
   serviceName,
   days,
 }: RescheduleBookingFormProps) {
@@ -41,6 +43,7 @@ export function RescheduleBookingForm({
     try {
       const result = await rescheduleBooking({
         bookingId,
+        masterId,
         startsAt: selectedSlot.startsAt,
         endsAt: selectedSlot.endsAt,
       });

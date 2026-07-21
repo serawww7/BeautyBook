@@ -1,8 +1,9 @@
 import { BookingFlow } from "@/components/booking/booking-flow";
 import { getBookingPageData } from "@/lib/booking/get-booking-page-data";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 export default async function HomePage() {
-  const data = await getBookingPageData("marina");
+  const data = await getBookingPageData({ salonSlug: DEMO_SALON_SLUG });
 
   if (!data) {
     return (

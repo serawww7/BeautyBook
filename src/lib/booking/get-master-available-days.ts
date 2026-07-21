@@ -44,13 +44,11 @@ export async function getMasterAvailableDays(params: {
         .from("working_hours")
         .select("weekday, start_time, end_time")
         .eq("master_id", masterId),
-      supabase
-        .from("bookings")
-        .select("id, starts_at, ends_at")
-        .eq("master_id", masterId)
-        .in("status", ["pending", "confirmed"])
-        .lt("starts_at", rangeEnd.toISOString())
-        .gt("ends_at", rangeStart.toISOString()),
+      supabase.rpc("list_master_busy_intervals", {
+        p_master_id: masterId,
+        p_range_start: rangeStart.toISOString(),
+        p_range_end: rangeEnd.toISOString(),
+      }),
       supabase
         .from("working_day_exceptions")
         .select("date, is_day_off, time_ranges")
@@ -67,11 +65,13 @@ export async function getMasterAvailableDays(params: {
       : [],
   }));
 
-  const busy = (bookings ?? [])
+  const busy = (
+    (bookings ?? []) as { id: string; starts_at: string; ends_at: string }[]
+  )
     .filter((booking) => booking.id !== excludeBookingId)
     .map((booking) => ({
-      starts_at: booking.starts_at as string,
-      ends_at: booking.ends_at as string,
+      starts_at: booking.starts_at,
+      ends_at: booking.ends_at,
     }));
 
   const daysByServiceId: Record<string, DaySlots[]> = {};

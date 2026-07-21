@@ -2,9 +2,10 @@ import Link from "next/link";
 
 import { AdminNewBookingForm } from "@/components/admin/new-booking-form";
 import { getBookingPageData } from "@/lib/booking/get-booking-page-data";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 export default async function AdminNewBookingPage() {
-  const data = await getBookingPageData("marina");
+  const data = await getBookingPageData({ salonSlug: DEMO_SALON_SLUG });
 
   if (!data) {
     return (

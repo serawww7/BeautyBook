@@ -6,8 +6,9 @@ import {
   formatAdminDate,
   formatAdminTime,
 } from "@/lib/admin/format";
-import { getBookingDetail } from "@/lib/admin/queries";
+import { getAdminContext, getBookingDetail } from "@/lib/admin/queries";
 import { getMasterAvailableDays } from "@/lib/booking/get-master-available-days";
+import { DEMO_SALON_SLUG } from "@/lib/tenant/config";
 
 type ReschedulePageProps = {
   params: Promise<{ id: string }>;
@@ -17,7 +18,12 @@ export default async function RescheduleBookingPage({
   params,
 }: ReschedulePageProps) {
   const { id } = await params;
-  const booking = await getBookingDetail(id);
+  const context = await getAdminContext({ salonSlug: DEMO_SALON_SLUG });
+  if (!context) {
+    notFound();
+  }
+
+  const booking = await getBookingDetail(id, context.master.id);
 
   if (!booking) {
     notFound();
@@ -77,6 +83,7 @@ export default async function RescheduleBookingPage({
 
       <RescheduleBookingForm
         bookingId={booking.id}
+        masterId={booking.masterId}
         serviceName={booking.serviceName}
         days={days}
       />
